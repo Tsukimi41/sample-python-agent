@@ -16,6 +16,7 @@
 # limitations under the License.
 
 import random
+from typing import Optional
 
 from aiwolf import (AbstractPlayer, Agent, Content, GameInfo, GameSetting,
                     Judge, Role, Species, Status, Talk, Topic,
@@ -23,6 +24,8 @@ from aiwolf import (AbstractPlayer, Agent, Content, GameInfo, GameSetting,
 from aiwolf.constant import AGENT_NONE
 
 from const import CONTENT_SKIP
+from aiwolf_belief_adapter import create_five_player_estimator, observe_new_game_info
+from belief_model import ExplainableRoleEstimator
 
 
 class SampleVillager(AbstractPlayer):
@@ -46,6 +49,10 @@ class SampleVillager(AbstractPlayer):
         """Time series of identification reports."""
         self.talk_list_head: int = 0
         """Index of the talk to be analysed next."""
+        self.belief_estimator: Optional[ExplainableRoleEstimator] = None
+        """Exact five-player role estimator, when the game setting is supported."""
+        self.last_vote_explanation: str = ""
+        """Auditable reason for the latest belief-based vote selection."""
 
     def is_alive(self, agent: Agent) -> bool:
         """Return whether the agent is alive.
@@ -112,6 +119,8 @@ class SampleVillager(AbstractPlayer):
         self.comingout_map.clear()
         self.divination_reports.clear()
         self.identification_reports.clear()
+        self.belief_estimator = create_five_player_estimator(game_info, game_setting)
+        self.last_vote_explanation = ""
 
     def day_start(self) -> None:
         self.talk_list_head = 0
@@ -119,6 +128,12 @@ class SampleVillager(AbstractPlayer):
 
     def update(self, game_info: GameInfo) -> None:
         self.game_info = game_info  # Update game information.
+        if self.belief_estimator is not None:
+            observe_new_game_info(
+                self.belief_estimator,
+                game_info,
+                talk_start_index=self.talk_list_head,
+            )
         for i in range(self.talk_list_head, len(game_info.talk_list)):  # Analyze talks that have not been analyzed yet.
             tk: Talk = game_info.talk_list[i]  # The talk to be analyzed.
             talker: Agent = tk.agent
@@ -149,6 +164,16 @@ class SampleVillager(AbstractPlayer):
         # Vote for one of the alive agents if there are no candidates.
         if not candidates:
             candidates = self.get_alive_others(self.game_info.agent_list)
+        if self.belief_estimator is not None and candidates:
+            decision = self.belief_estimator.choose_vote(
+                self.game_info.alive_agent_list,
+                eligible_candidates=candidates,
+            )
+            self.last_vote_explanation = decision.argument.render()
+            if self.vote_candidate != decision.target:
+                self.vote_candidate = decision.target
+                return Content(VoteContentBuilder(self.vote_candidate))
+            return CONTENT_SKIP
         # Declare which to vote for if not declare yet or the candidate is changed.
         if self.vote_candidate == AGENT_NONE or self.vote_candidate not in candidates:
             self.vote_candidate = self.random_select(candidates)
