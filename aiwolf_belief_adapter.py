@@ -61,8 +61,11 @@ def talk_to_observation(talk: Talk) -> Observation | None:
         "actor": talk.agent,
         "day": talk.day,
         "turn": talk.turn,
+        "talk_index": talk.idx,
     }
     if content.topic is Topic.COMINGOUT and content.role.value in SUPPORTED_ROLES:
+        if content.target != talk.agent:
+            return None  # A claim about someone else is not a self role claim.
         return Observation(
             kind=ObservationKind.COMINGOUT,
             claimed_role=Role(content.role.value),
@@ -101,6 +104,8 @@ def private_divination_to_observation(
         species=Species(judge.result.value),
         day=judge.day,
         visibility=Visibility.PRIVATE,
+        phase="NIGHT",
+        source="own_divination",
     )
 
 
@@ -125,6 +130,7 @@ def observe_new_game_info(
                 actor=vote.agent,
                 target=vote.target,
                 day=vote.day,
+                phase="VOTE",
             )
         )
 
@@ -139,7 +145,10 @@ def observe_new_game_info(
             )
         )
 
-    if game_info.attacked_agent is not None:
+    # attacked_agent can denote the attack target even if it survived.
+    # Only an observed death justifies the non-wolf hard constraint.
+    if (game_info.attacked_agent is not None
+            and game_info.attacked_agent in game_info.last_dead_agent_list):
         estimator.observe(
             Observation(
                 id=f"attacked:{game_info.day}:{game_info.attacked_agent}",

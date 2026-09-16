@@ -1,0 +1,12 @@
+{
+  "label": "合成デモ: 占い師COと黒報告",
+  "agents": ["Agent[01]", "Agent[02]", "Agent[03]", "Agent[04]", "Agent[05]"],
+  "observer": "Agent[01]",
+  "observer_role": "VILLAGER",
+  "observations": [
+    {"id": "talk:1:0", "kind": "COMINGOUT", "actor": "Agent[02]", "claimed_role": "SEER", "day": 1, "turn": 0, "talk_index": 0},
+    {"id": "talk:1:1", "kind": "DIVINED", "actor": "Agent[02]", "target": "Agent[03]", "species": "WEREWOLF", "day": 1, "turn": 1, "talk_index": 1},
+    {"id": "talk:1:2", "kind": "COMINGOUT", "actor": "Agent[04]", "claimed_role": "SEER", "day": 1, "turn": 5, "talk_index": 2}
+  ],
+  "truth": {"Agent[01]": "VILLAGER", "Agent[02]": "SEER", "Agent[03]": "WEREWOLF", "Agent[04]": "POSSESSED", "Agent[05]": "VILLAGER"}
+}

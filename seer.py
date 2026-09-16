@@ -89,7 +89,6 @@ class SampleSeer(SampleVillager):
         if self.belief_estimator is not None and candidates:
             decision = self.belief_estimator.choose_vote(
                 self.game_info.alive_agent_list,
-                eligible_candidates=candidates,
             )
             self.last_vote_explanation = decision.argument.render()
             if self.vote_candidate != decision.target:

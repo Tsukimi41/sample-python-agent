@@ -1,0 +1,993 @@
+[
+  {
+    "label": "合成デモ: 占い師COと黒報告",
+    "condition": "hard-only",
+    "sample_size": 4,
+    "role_accuracy": 0.25,
+    "log_loss": 1.3862943611198908,
+    "brier_score": 0.75,
+    "ece": 2.7755575615628914e-17,
+    "calibration_bins": [
+      {
+        "count": 0,
+        "gap": 0.0
+      },
+      {
+        "count": 0,
+        "gap": 0.0
+      },
+      {
+        "count": 4,
+        "gap": 2.7755575615628914e-17
+      },
+      {
+        "count": 0,
+        "gap": 0.0
+      },
+      {
+        "count": 0,
+        "gap": 0.0
+      },
+      {
+        "count": 0,
+        "gap": 0.0
+      },
+      {
+        "count": 0,
+        "gap": 0.0
+      },
+      {
+        "count": 0,
+        "gap": 0.0
+      },
+      {
+        "count": 0,
+        "gap": 0.0
+      },
+      {
+        "count": 0,
+        "gap": 0.0
+      }
+    ],
+    "top5_contains_truth": false,
+    "maximum_role_count_error": 4.440892098500626e-16,
+    "vote_target": "Agent[02]",
+    "vote_hits_wolf": false,
+    "uniform_random_vote_hit_expectation": 0.25,
+    "update_ms_mean": 0.5274666667294999,
+    "argument": {
+      "claim": "Agent[02]を投票候補として検討する。公開根拠による支持と留保を示す。",
+      "grounds": [
+        "公開済みの観測だけでは、この候補を強く支持する個別根拠がまだない。"
+      ],
+      "warrants": [
+        "根拠が不足している場合は、確率値を理由の代用品にせず、判断が暫定的だと明示する。"
+      ],
+      "alternatives": [
+        "Agent[01]が人狼である世界も残る。この別仮説は現在の証拠モデルで対象仮説以上に支持され、公開根拠だけでは対象を優先できない。"
+      ],
+      "counterarguments": [
+        "発言は戦略、ブラフ、推理途中の誤りでも説明できるため、単独の発言だけでは役職を確定できない。"
+      ],
+      "confidence_summary": "統合後のAgent[02]人狼確率は20.0%。これは根拠ではなく不確実性の要約である。",
+      "audience": null,
+      "evidence_ids": [],
+      "rebuttals": [],
+      "disclosure_policy": "公開履歴だけで再計算し、自己役職・私有観測を開示しない。"
+    },
+    "reasoning_graph": {
+      "nodes": [
+        {
+          "id": "hypothesis:Agent[02]",
+          "kind": "hypothesis",
+          "content": "Agent[02]が人狼である"
+        }
+      ],
+      "edges": [],
+      "argument": {
+        "claim": "Agent[02]を投票候補として検討する。公開根拠による支持と留保を示す。",
+        "grounds": [
+          "公開済みの観測だけでは、この候補を強く支持する個別根拠がまだない。"
+        ],
+        "warrants": [
+          "根拠が不足している場合は、確率値を理由の代用品にせず、判断が暫定的だと明示する。"
+        ],
+        "alternatives": [
+          "Agent[01]が人狼である世界も残る。この別仮説は現在の証拠モデルで対象仮説以上に支持され、公開根拠だけでは対象を優先できない。"
+        ],
+        "counterarguments": [
+          "発言は戦略、ブラフ、推理途中の誤りでも説明できるため、単独の発言だけでは役職を確定できない。"
+        ],
+        "confidence_summary": "統合後のAgent[02]人狼確率は20.0%。これは根拠ではなく不確実性の要約である。",
+        "audience": null,
+        "evidence_ids": [],
+        "rebuttals": [],
+        "disclosure_policy": "公開履歴だけで再計算し、自己役職・私有観測を開示しない。"
+      }
+    },
+    "snapshots": [
+      {
+        "step": 0,
+        "observation_id": null,
+        "marginals": {
+          "Agent[01]": {
+            "VILLAGER": 0.9999999999999996,
+            "SEER": 0,
+            "POSSESSED": 0,
+            "WEREWOLF": 0
+          },
+          "Agent[02]": {
+            "VILLAGER": 0.24999999999999997,
+            "SEER": 0.24999999999999997,
+            "POSSESSED": 0.24999999999999997,
+            "WEREWOLF": 0.24999999999999997
+          },
+          "Agent[03]": {
+            "VILLAGER": 0.24999999999999997,
+            "SEER": 0.24999999999999997,
+            "POSSESSED": 0.24999999999999997,
+            "WEREWOLF": 0.24999999999999997
+          },
+          "Agent[04]": {
+            "VILLAGER": 0.24999999999999997,
+            "SEER": 0.24999999999999997,
+            "POSSESSED": 0.24999999999999997,
+            "WEREWOLF": 0.24999999999999997
+          },
+          "Agent[05]": {
+            "VILLAGER": 0.24999999999999997,
+            "SEER": 0.24999999999999997,
+            "POSSESSED": 0.24999999999999997,
+            "WEREWOLF": 0.24999999999999997
+          }
+        },
+        "top_worlds": [
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "SEER",
+              "Agent[04]": "VILLAGER",
+              "Agent[05]": "WEREWOLF"
+            },
+            "probability": 0.041666666666666664
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "SEER",
+              "Agent[04]": "WEREWOLF",
+              "Agent[05]": "VILLAGER"
+            },
+            "probability": 0.041666666666666664
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "VILLAGER",
+              "Agent[04]": "SEER",
+              "Agent[05]": "WEREWOLF"
+            },
+            "probability": 0.041666666666666664
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "VILLAGER",
+              "Agent[04]": "WEREWOLF",
+              "Agent[05]": "SEER"
+            },
+            "probability": 0.041666666666666664
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "WEREWOLF",
+              "Agent[04]": "SEER",
+              "Agent[05]": "VILLAGER"
+            },
+            "probability": 0.041666666666666664
+          }
+        ]
+      },
+      {
+        "step": 1,
+        "observation_id": "talk:1:0",
+        "marginals": {
+          "Agent[01]": {
+            "VILLAGER": 0.9999999999999996,
+            "SEER": 0,
+            "POSSESSED": 0,
+            "WEREWOLF": 0
+          },
+          "Agent[02]": {
+            "VILLAGER": 0.24999999999999997,
+            "SEER": 0.24999999999999997,
+            "POSSESSED": 0.24999999999999997,
+            "WEREWOLF": 0.24999999999999997
+          },
+          "Agent[03]": {
+            "VILLAGER": 0.24999999999999997,
+            "SEER": 0.24999999999999997,
+            "POSSESSED": 0.24999999999999997,
+            "WEREWOLF": 0.24999999999999997
+          },
+          "Agent[04]": {
+            "VILLAGER": 0.24999999999999997,
+            "SEER": 0.24999999999999997,
+            "POSSESSED": 0.24999999999999997,
+            "WEREWOLF": 0.24999999999999997
+          },
+          "Agent[05]": {
+            "VILLAGER": 0.24999999999999997,
+            "SEER": 0.24999999999999997,
+            "POSSESSED": 0.24999999999999997,
+            "WEREWOLF": 0.24999999999999997
+          }
+        },
+        "top_worlds": [
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "SEER",
+              "Agent[04]": "VILLAGER",
+              "Agent[05]": "WEREWOLF"
+            },
+            "probability": 0.041666666666666664
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "SEER",
+              "Agent[04]": "WEREWOLF",
+              "Agent[05]": "VILLAGER"
+            },
+            "probability": 0.041666666666666664
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "VILLAGER",
+              "Agent[04]": "SEER",
+              "Agent[05]": "WEREWOLF"
+            },
+            "probability": 0.041666666666666664
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "VILLAGER",
+              "Agent[04]": "WEREWOLF",
+              "Agent[05]": "SEER"
+            },
+            "probability": 0.041666666666666664
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "WEREWOLF",
+              "Agent[04]": "SEER",
+              "Agent[05]": "VILLAGER"
+            },
+            "probability": 0.041666666666666664
+          }
+        ]
+      },
+      {
+        "step": 2,
+        "observation_id": "talk:1:1",
+        "marginals": {
+          "Agent[01]": {
+            "VILLAGER": 0.9999999999999996,
+            "SEER": 0,
+            "POSSESSED": 0,
+            "WEREWOLF": 0
+          },
+          "Agent[02]": {
+            "VILLAGER": 0.24999999999999997,
+            "SEER": 0.24999999999999997,
+            "POSSESSED": 0.24999999999999997,
+            "WEREWOLF": 0.24999999999999997
+          },
+          "Agent[03]": {
+            "VILLAGER": 0.24999999999999997,
+            "SEER": 0.24999999999999997,
+            "POSSESSED": 0.24999999999999997,
+            "WEREWOLF": 0.24999999999999997
+          },
+          "Agent[04]": {
+            "VILLAGER": 0.24999999999999997,
+            "SEER": 0.24999999999999997,
+            "POSSESSED": 0.24999999999999997,
+            "WEREWOLF": 0.24999999999999997
+          },
+          "Agent[05]": {
+            "VILLAGER": 0.24999999999999997,
+            "SEER": 0.24999999999999997,
+            "POSSESSED": 0.24999999999999997,
+            "WEREWOLF": 0.24999999999999997
+          }
+        },
+        "top_worlds": [
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "SEER",
+              "Agent[04]": "VILLAGER",
+              "Agent[05]": "WEREWOLF"
+            },
+            "probability": 0.041666666666666664
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "SEER",
+              "Agent[04]": "WEREWOLF",
+              "Agent[05]": "VILLAGER"
+            },
+            "probability": 0.041666666666666664
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "VILLAGER",
+              "Agent[04]": "SEER",
+              "Agent[05]": "WEREWOLF"
+            },
+            "probability": 0.041666666666666664
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "VILLAGER",
+              "Agent[04]": "WEREWOLF",
+              "Agent[05]": "SEER"
+            },
+            "probability": 0.041666666666666664
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "WEREWOLF",
+              "Agent[04]": "SEER",
+              "Agent[05]": "VILLAGER"
+            },
+            "probability": 0.041666666666666664
+          }
+        ]
+      },
+      {
+        "step": 3,
+        "observation_id": "talk:1:2",
+        "marginals": {
+          "Agent[01]": {
+            "VILLAGER": 0.9999999999999996,
+            "SEER": 0,
+            "POSSESSED": 0,
+            "WEREWOLF": 0
+          },
+          "Agent[02]": {
+            "VILLAGER": 0.24999999999999997,
+            "SEER": 0.24999999999999997,
+            "POSSESSED": 0.24999999999999997,
+            "WEREWOLF": 0.24999999999999997
+          },
+          "Agent[03]": {
+            "VILLAGER": 0.24999999999999997,
+            "SEER": 0.24999999999999997,
+            "POSSESSED": 0.24999999999999997,
+            "WEREWOLF": 0.24999999999999997
+          },
+          "Agent[04]": {
+            "VILLAGER": 0.24999999999999997,
+            "SEER": 0.24999999999999997,
+            "POSSESSED": 0.24999999999999997,
+            "WEREWOLF": 0.24999999999999997
+          },
+          "Agent[05]": {
+            "VILLAGER": 0.24999999999999997,
+            "SEER": 0.24999999999999997,
+            "POSSESSED": 0.24999999999999997,
+            "WEREWOLF": 0.24999999999999997
+          }
+        },
+        "top_worlds": [
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "SEER",
+              "Agent[04]": "VILLAGER",
+              "Agent[05]": "WEREWOLF"
+            },
+            "probability": 0.041666666666666664
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "SEER",
+              "Agent[04]": "WEREWOLF",
+              "Agent[05]": "VILLAGER"
+            },
+            "probability": 0.041666666666666664
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "VILLAGER",
+              "Agent[04]": "SEER",
+              "Agent[05]": "WEREWOLF"
+            },
+            "probability": 0.041666666666666664
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "VILLAGER",
+              "Agent[04]": "WEREWOLF",
+              "Agent[05]": "SEER"
+            },
+            "probability": 0.041666666666666664
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "WEREWOLF",
+              "Agent[04]": "SEER",
+              "Agent[05]": "VILLAGER"
+            },
+            "probability": 0.041666666666666664
+          }
+        ]
+      }
+    ],
+    "limitations": "合成局面1件の動作例。勝率・汎化性能・説得効果を測定した結果ではない。"
+  },
+  {
+    "label": "合成デモ: 占い師COと黒報告",
+    "condition": "soft-evidence",
+    "sample_size": 4,
+    "role_accuracy": 0.75,
+    "log_loss": 0.6935949637099031,
+    "brier_score": 0.3768780438726359,
+    "ece": 0.23977019604397876,
+    "calibration_bins": [
+      {
+        "count": 0,
+        "gap": 0.0
+      },
+      {
+        "count": 0,
+        "gap": 0.0
+      },
+      {
+        "count": 0,
+        "gap": 0.0
+      },
+      {
+        "count": 0,
+        "gap": 0.0
+      },
+      {
+        "count": 2,
+        "gap": 0.06165565738152909
+      },
+      {
+        "count": 1,
+        "gap": 0.46631323475310116
+      },
+      {
+        "count": 1,
+        "gap": 0.36945623465975563
+      },
+      {
+        "count": 0,
+        "gap": 0.0
+      },
+      {
+        "count": 0,
+        "gap": 0.0
+      },
+      {
+        "count": 0,
+        "gap": 0.0
+      }
+    ],
+    "top5_contains_truth": true,
+    "maximum_role_count_error": 8.881784197001252e-16,
+    "vote_target": "Agent[03]",
+    "vote_hits_wolf": true,
+    "uniform_random_vote_hit_expectation": 0.25,
+    "update_ms_mean": 0.3955333328728254,
+    "argument": {
+      "claim": "Agent[03]を投票候補として検討する。公開根拠による支持と留保を示す。",
+      "grounds": [
+        "1日目・第1発言に公開された情報として、Agent[02]がAgent[03]をWEREWOLFと判定した。",
+        "1日目・第0発言にAgent[02]がSEERをCOした。"
+      ],
+      "warrants": [
+        "占い報告と役職世界の整合性を比較する。真占い師は一致しやすく、人狼は正確に真似られ、狂人は偶然一致し得るため、報告だけでは確定しない。",
+        "占い師COの起こりやすさは役職で異なる。初期のCOとして比較する。"
+      ],
+      "alternatives": [
+        "Agent[04]が人狼である世界も残る。観測と各役職の行動尤度を統合すると対象仮説が優勢だが、別仮説を排除はできない。"
+      ],
+      "counterarguments": [
+        "発言は戦略、ブラフ、推理途中の誤りでも説明できるため、単独の発言だけでは役職を確定できない。",
+        "1日目・第5発言にAgent[04]がSEERをCOした。 この観測の更新は対象の人狼仮説を弱めた。"
+      ],
+      "confidence_summary": "統合後のAgent[03]人狼確率は40.8%。これは根拠ではなく不確実性の要約である。",
+      "audience": null,
+      "evidence_ids": [
+        "talk:1:1",
+        "talk:1:0"
+      ],
+      "rebuttals": [],
+      "disclosure_policy": "公開履歴だけで再計算し、自己役職・私有観測を開示しない。"
+    },
+    "reasoning_graph": {
+      "nodes": [
+        {
+          "id": "hypothesis:Agent[03]",
+          "kind": "hypothesis",
+          "content": "Agent[03]が人狼である"
+        },
+        {
+          "id": "event:talk:1:0",
+          "kind": "observation",
+          "content": "1日目・第0発言にAgent[02]がSEERをCOした。"
+        },
+        {
+          "id": "rule:talk:1:0:SEER_COMINGOUT_BY_ROLE",
+          "kind": "rule",
+          "content": "占い師COの起こりやすさは役職で異なる。初期のCOとして比較する。"
+        },
+        {
+          "id": "event:talk:1:1",
+          "kind": "observation",
+          "content": "1日目・第1発言に公開された情報として、Agent[02]がAgent[03]をWEREWOLFと判定した。"
+        },
+        {
+          "id": "rule:talk:1:1:DIVINATION_REPORT_COMPATIBILITY",
+          "kind": "rule",
+          "content": "占い報告と役職世界の整合性を比較する。真占い師は一致しやすく、人狼は正確に真似られ、狂人は偶然一致し得るため、報告だけでは確定しない。"
+        },
+        {
+          "id": "event:talk:1:2",
+          "kind": "observation",
+          "content": "1日目・第5発言にAgent[04]がSEERをCOした。"
+        },
+        {
+          "id": "rule:talk:1:2:LATE_SEER_COMINGOUT",
+          "kind": "rule",
+          "content": "占い師COの起こりやすさは役職で異なる。遅い時点または対抗CO後の宣言として、時点の尤度係数を適用する。"
+        }
+      ],
+      "edges": [
+        {
+          "source_ids": [
+            "event:talk:1:0",
+            "rule:talk:1:0:SEER_COMINGOUT_BY_ROLE"
+          ],
+          "target_id": "hypothesis:Agent[03]",
+          "relation": "supports"
+        },
+        {
+          "source_ids": [
+            "event:talk:1:1",
+            "rule:talk:1:1:DIVINATION_REPORT_COMPATIBILITY"
+          ],
+          "target_id": "hypothesis:Agent[03]",
+          "relation": "supports"
+        },
+        {
+          "source_ids": [
+            "event:talk:1:2",
+            "rule:talk:1:2:LATE_SEER_COMINGOUT"
+          ],
+          "target_id": "hypothesis:Agent[03]",
+          "relation": "weakens"
+        }
+      ],
+      "argument": {
+        "claim": "Agent[03]を投票候補として検討する。公開根拠による支持と留保を示す。",
+        "grounds": [
+          "1日目・第1発言に公開された情報として、Agent[02]がAgent[03]をWEREWOLFと判定した。",
+          "1日目・第0発言にAgent[02]がSEERをCOした。"
+        ],
+        "warrants": [
+          "占い報告と役職世界の整合性を比較する。真占い師は一致しやすく、人狼は正確に真似られ、狂人は偶然一致し得るため、報告だけでは確定しない。",
+          "占い師COの起こりやすさは役職で異なる。初期のCOとして比較する。"
+        ],
+        "alternatives": [
+          "Agent[04]が人狼である世界も残る。観測と各役職の行動尤度を統合すると対象仮説が優勢だが、別仮説を排除はできない。"
+        ],
+        "counterarguments": [
+          "発言は戦略、ブラフ、推理途中の誤りでも説明できるため、単独の発言だけでは役職を確定できない。",
+          "1日目・第5発言にAgent[04]がSEERをCOした。 この観測の更新は対象の人狼仮説を弱めた。"
+        ],
+        "confidence_summary": "統合後のAgent[03]人狼確率は40.8%。これは根拠ではなく不確実性の要約である。",
+        "audience": null,
+        "evidence_ids": [
+          "talk:1:1",
+          "talk:1:0"
+        ],
+        "rebuttals": [],
+        "disclosure_policy": "公開履歴だけで再計算し、自己役職・私有観測を開示しない。"
+      }
+    },
+    "snapshots": [
+      {
+        "step": 0,
+        "observation_id": null,
+        "marginals": {
+          "Agent[01]": {
+            "VILLAGER": 0.9999999999999996,
+            "SEER": 0,
+            "POSSESSED": 0,
+            "WEREWOLF": 0
+          },
+          "Agent[02]": {
+            "VILLAGER": 0.24999999999999997,
+            "SEER": 0.24999999999999997,
+            "POSSESSED": 0.24999999999999997,
+            "WEREWOLF": 0.24999999999999997
+          },
+          "Agent[03]": {
+            "VILLAGER": 0.24999999999999997,
+            "SEER": 0.24999999999999997,
+            "POSSESSED": 0.24999999999999997,
+            "WEREWOLF": 0.24999999999999997
+          },
+          "Agent[04]": {
+            "VILLAGER": 0.24999999999999997,
+            "SEER": 0.24999999999999997,
+            "POSSESSED": 0.24999999999999997,
+            "WEREWOLF": 0.24999999999999997
+          },
+          "Agent[05]": {
+            "VILLAGER": 0.24999999999999997,
+            "SEER": 0.24999999999999997,
+            "POSSESSED": 0.24999999999999997,
+            "WEREWOLF": 0.24999999999999997
+          }
+        },
+        "top_worlds": [
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "SEER",
+              "Agent[04]": "VILLAGER",
+              "Agent[05]": "WEREWOLF"
+            },
+            "probability": 0.041666666666666664
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "SEER",
+              "Agent[04]": "WEREWOLF",
+              "Agent[05]": "VILLAGER"
+            },
+            "probability": 0.041666666666666664
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "VILLAGER",
+              "Agent[04]": "SEER",
+              "Agent[05]": "WEREWOLF"
+            },
+            "probability": 0.041666666666666664
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "VILLAGER",
+              "Agent[04]": "WEREWOLF",
+              "Agent[05]": "SEER"
+            },
+            "probability": 0.041666666666666664
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "WEREWOLF",
+              "Agent[04]": "SEER",
+              "Agent[05]": "VILLAGER"
+            },
+            "probability": 0.041666666666666664
+          }
+        ]
+      },
+      {
+        "step": 1,
+        "observation_id": "talk:1:0",
+        "marginals": {
+          "Agent[01]": {
+            "VILLAGER": 1.0000000000000007,
+            "SEER": 0,
+            "POSSESSED": 0,
+            "WEREWOLF": 0
+          },
+          "Agent[02]": {
+            "VILLAGER": 0.027472527472527496,
+            "SEER": 0.45054945054945084,
+            "POSSESSED": 0.3571428571428575,
+            "WEREWOLF": 0.1648351648351649
+          },
+          "Agent[03]": {
+            "VILLAGER": 0.32417582417582436,
+            "SEER": 0.18315018315018328,
+            "POSSESSED": 0.2142857142857144,
+            "WEREWOLF": 0.2783882783882785
+          },
+          "Agent[04]": {
+            "VILLAGER": 0.32417582417582436,
+            "SEER": 0.18315018315018328,
+            "POSSESSED": 0.2142857142857144,
+            "WEREWOLF": 0.2783882783882785
+          },
+          "Agent[05]": {
+            "VILLAGER": 0.32417582417582436,
+            "SEER": 0.18315018315018328,
+            "POSSESSED": 0.2142857142857144,
+            "WEREWOLF": 0.2783882783882785
+          }
+        },
+        "top_worlds": [
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "SEER",
+              "Agent[03]": "POSSESSED",
+              "Agent[04]": "VILLAGER",
+              "Agent[05]": "WEREWOLF"
+            },
+            "probability": 0.07509157509157513
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "SEER",
+              "Agent[03]": "POSSESSED",
+              "Agent[04]": "WEREWOLF",
+              "Agent[05]": "VILLAGER"
+            },
+            "probability": 0.07509157509157513
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "SEER",
+              "Agent[03]": "VILLAGER",
+              "Agent[04]": "POSSESSED",
+              "Agent[05]": "WEREWOLF"
+            },
+            "probability": 0.07509157509157513
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "SEER",
+              "Agent[03]": "VILLAGER",
+              "Agent[04]": "WEREWOLF",
+              "Agent[05]": "POSSESSED"
+            },
+            "probability": 0.07509157509157513
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "SEER",
+              "Agent[03]": "WEREWOLF",
+              "Agent[04]": "POSSESSED",
+              "Agent[05]": "VILLAGER"
+            },
+            "probability": 0.07509157509157513
+          }
+        ]
+      },
+      {
+        "step": 2,
+        "observation_id": "talk:1:1",
+        "marginals": {
+          "Agent[01]": {
+            "VILLAGER": 0.9999999999999998,
+            "SEER": 0,
+            "POSSESSED": 0,
+            "WEREWOLF": 0
+          },
+          "Agent[02]": {
+            "VILLAGER": 0.010799136069114467,
+            "SEER": 0.41324694024478037,
+            "POSSESSED": 0.4679625629949604,
+            "WEREWOLF": 0.10799136069114461
+          },
+          "Agent[03]": {
+            "VILLAGER": 0.2116630669546436,
+            "SEER": 0.19558435325173984,
+            "POSSESSED": 0.05927525797936162,
+            "WEREWOLF": 0.5334773218142548
+          },
+          "Agent[04]": {
+            "VILLAGER": 0.3887688984881208,
+            "SEER": 0.19558435325173984,
+            "POSSESSED": 0.2363810895128389,
+            "WEREWOLF": 0.17926565874730022
+          },
+          "Agent[05]": {
+            "VILLAGER": 0.3887688984881208,
+            "SEER": 0.19558435325173984,
+            "POSSESSED": 0.2363810895128389,
+            "WEREWOLF": 0.17926565874730022
+          }
+        },
+        "top_worlds": [
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "SEER",
+              "Agent[03]": "WEREWOLF",
+              "Agent[04]": "POSSESSED",
+              "Agent[05]": "VILLAGER"
+            },
+            "probability": 0.18694504439644824
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "SEER",
+              "Agent[03]": "WEREWOLF",
+              "Agent[04]": "VILLAGER",
+              "Agent[05]": "POSSESSED"
+            },
+            "probability": 0.18694504439644824
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "SEER",
+              "Agent[04]": "VILLAGER",
+              "Agent[05]": "WEREWOLF"
+            },
+            "probability": 0.07799376049916007
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "SEER",
+              "Agent[04]": "WEREWOLF",
+              "Agent[05]": "VILLAGER"
+            },
+            "probability": 0.07799376049916007
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "VILLAGER",
+              "Agent[04]": "SEER",
+              "Agent[05]": "WEREWOLF"
+            },
+            "probability": 0.07799376049916007
+          }
+        ]
+      },
+      {
+        "step": 3,
+        "observation_id": "talk:1:2",
+        "marginals": {
+          "Agent[01]": {
+            "VILLAGER": 0.9999999999999996,
+            "SEER": 0,
+            "POSSESSED": 0,
+            "WEREWOLF": 0
+          },
+          "Agent[02]": {
+            "VILLAGER": 0.01621467282381299,
+            "SEER": 0.4163358390210063,
+            "POSSESSED": 0.43138460750022406,
+            "WEREWOLF": 0.1360648806549562
+          },
+          "Agent[03]": {
+            "VILLAGER": 0.2969047710562872,
+            "SEER": 0.12058507532620605,
+            "POSSESSED": 0.048823388370607436,
+            "WEREWOLF": 0.5336867652468988
+          },
+          "Agent[04]": {
+            "VILLAGER": 0.05633679077965505,
+            "SEER": 0.34249401032658117,
+            "POSSESSED": 0.44530407773671776,
+            "WEREWOLF": 0.1558651211570456
+          },
+          "Agent[05]": {
+            "VILLAGER": 0.6305437653402444,
+            "SEER": 0.12058507532620605,
+            "POSSESSED": 0.07448792639245028,
+            "WEREWOLF": 0.1743832329410989
+          }
+        },
+        "top_worlds": [
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "SEER",
+              "Agent[03]": "WEREWOLF",
+              "Agent[04]": "POSSESSED",
+              "Agent[05]": "VILLAGER"
+            },
+            "probability": 0.35217449396639916
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "VILLAGER",
+              "Agent[04]": "SEER",
+              "Agent[05]": "WEREWOLF"
+            },
+            "probability": 0.13657736608115204
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "WEREWOLF",
+              "Agent[04]": "SEER",
+              "Agent[05]": "VILLAGER"
+            },
+            "probability": 0.13657736608115204
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "SEER",
+              "Agent[04]": "WEREWOLF",
+              "Agent[05]": "VILLAGER"
+            },
+            "probability": 0.06781280371625142
+          },
+          {
+            "assignments": {
+              "Agent[01]": "VILLAGER",
+              "Agent[02]": "POSSESSED",
+              "Agent[03]": "VILLAGER",
+              "Agent[04]": "WEREWOLF",
+              "Agent[05]": "SEER"
+            },
+            "probability": 0.06781280371625142
+          }
+        ]
+      }
+    ],
+    "limitations": "合成局面1件の動作例。勝率・汎化性能・説得効果を測定した結果ではない。"
+  }
+]

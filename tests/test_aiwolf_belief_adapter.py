@@ -19,6 +19,10 @@ from belief_model import ObservationKind, Role, Species, Visibility
 
 @unittest.skipIf(Agent is None, "aiwolf package is not installed")
 class AIWolfBeliefAdapterTests(unittest.TestCase):
+    def test_third_party_role_claim_is_not_self_comingout(self):
+        talk = Talk(1, Agent(2), 3, "COMINGOUT Agent[03] SEER", 1)
+        self.assertIsNone(talk_to_observation(talk))
+
     def test_translates_comingout_as_an_observation(self) -> None:
         talk = Talk(1, Agent(2), 3, "COMINGOUT Agent[02] SEER", 1)
 

@@ -77,6 +77,28 @@ def game_info(talks=None, *, role="VILLAGER", divine_result=None):
 
 @unittest.skipIf(Agent is None, "aiwolf package is not installed")
 class SampleVillagerBeliefIntegrationTests(unittest.TestCase):
+    def test_vote_without_talk_never_falls_back_to_self(self):
+        player = SampleVillager()
+        player.initialize(game_info(), game_setting())
+        player.day_start()
+        self.assertEqual(Agent(2), player.vote())
+
+    def test_new_game_clears_old_talk_cursor(self):
+        player = SampleVillager()
+        player.talk_list_head = 99
+        player.initialize(game_info(), game_setting())
+        self.assertEqual(0, player.talk_list_head)
+
+    def test_attack_target_without_observed_death_is_not_a_hard_fact(self):
+        from aiwolf_belief_adapter import observe_new_game_info
+        info = game_info()
+        player = SampleVillager()
+        player.initialize(info, game_setting())
+        # The SDK exposes the attack target separately from observed deaths.
+        info.attacked_agent = Agent(2)
+        observe_new_game_info(player.belief_estimator, info, talk_start_index=0)
+        self.assertAlmostEqual(.25, player.belief_estimator.marginal(Agent(2), BeliefRole.WEREWOLF))
+
     def test_villager_uses_estimator_and_retains_vote_reason(self) -> None:
         player = SampleVillager()
         initial = game_info()

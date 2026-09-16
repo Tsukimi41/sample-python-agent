@@ -121,6 +121,8 @@ class SampleVillager(AbstractPlayer):
         self.identification_reports.clear()
         self.belief_estimator = create_five_player_estimator(game_info, game_setting)
         self.last_vote_explanation = ""
+        self.talk_list_head = 0
+        self.vote_candidate = AGENT_NONE
 
     def day_start(self) -> None:
         self.talk_list_head = 0
@@ -167,7 +169,6 @@ class SampleVillager(AbstractPlayer):
         if self.belief_estimator is not None and candidates:
             decision = self.belief_estimator.choose_vote(
                 self.game_info.alive_agent_list,
-                eligible_candidates=candidates,
             )
             self.last_vote_explanation = decision.argument.render()
             if self.vote_candidate != decision.target:
@@ -182,6 +183,12 @@ class SampleVillager(AbstractPlayer):
         return CONTENT_SKIP
 
     def vote(self) -> Agent:
+        # Servers may request a vote without a preceding VOTE utterance, or
+        # after the declared target died. Recompute at the action boundary.
+        if self.belief_estimator is not None and self.game_info.my_role in {Role.VILLAGER, Role.SEER}:
+            decision = self.belief_estimator.choose_vote(self.game_info.alive_agent_list)
+            self.vote_candidate = decision.target
+            self.last_vote_explanation = decision.argument.render()
         return self.vote_candidate if self.vote_candidate != AGENT_NONE else self.me
 
     def attack(self) -> Agent:

@@ -65,11 +65,14 @@ class Observation:
     claimed_role: Role | None = None
     species: Species | None = None
     visibility: Visibility = Visibility.PUBLIC
+    phase: str = "TALK"
+    talk_index: int = 0
+    source: str = "protocol"
 
     def __post_init__(self) -> None:
         if not self.id:
             raise ValueError("observation id must not be empty")
-        if self.day < 0 or self.turn < 0:
+        if self.day < 0 or self.turn < 0 or self.talk_index < 0:
             raise ValueError("day and turn must be non-negative")
         if self.kind is ObservationKind.COMINGOUT and self.claimed_role is None:
             raise ValueError("COMINGOUT requires claimed_role")
@@ -111,7 +114,7 @@ class LikelihoodEvidence:
 class LikelihoodParameters:
     """Auditable baseline parameters; each value is an explicit hypothesis."""
 
-    version: str = "transparent-v1"
+    version: str = "transparent-v2"
     seer_co_if_seer: float = 0.82
     seer_co_if_possessed: float = 0.65
     seer_co_if_werewolf: float = 0.30
@@ -136,6 +139,10 @@ class LikelihoodParameters:
     declared_vote_village_to_other: float = 0.20
     declared_vote_wolf_side_to_wolf: float = 0.15
     declared_vote_wolf_side_to_other: float = 0.28
+    late_co_if_seer: float = 0.70
+    late_co_if_other: float = 0.95
+    changed_vote_if_village: float = 0.65
+    changed_vote_if_wolf_side: float = 0.85
 
     def __post_init__(self) -> None:
         if not self.version:
@@ -182,6 +189,9 @@ class Argument:
     counterarguments: tuple[str, ...]
     confidence_summary: str
     audience: AgentId | None = None
+    evidence_ids: tuple[str, ...] = ()
+    rebuttals: tuple[str, ...] = ()
+    disclosure_policy: str = "公開履歴だけで再計算し、自己役職・私有観測を開示しない。"
 
     def render(self) -> str:
         parts = [f"主張: {self.claim}"]
@@ -189,6 +199,7 @@ class Argument:
         parts.extend(f"理由: {warrant}" for warrant in self.warrants)
         parts.extend(f"代替仮説: {alternative}" for alternative in self.alternatives)
         parts.extend(f"想定反論: {item}" for item in self.counterarguments)
+        parts.extend(f"応答: {item}" for item in self.rebuttals)
         parts.append(f"参考値: {self.confidence_summary}")
         return "\n".join(parts)
 
@@ -198,6 +209,7 @@ class BeliefUpdate:
     observation: Observation
     eliminated_worlds: int
     reasons: tuple[Reason, ...]
+    world_evidence: tuple[LikelihoodEvidence, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -206,6 +218,7 @@ class VoteDecision:
     score: float
     tie_break_rule: str
     argument: Argument
+    scores: tuple[tuple[AgentId, float], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -299,10 +312,21 @@ class TransparentLikelihoodModel:
                     Role.WEREWOLF: parameters.seer_co_if_werewolf,
                     Role.VILLAGER: parameters.seer_co_if_villager,
                 }[actor_role]
+                # A late/counter claim is a different observation context.
+                late = observation.day > 1 or observation.turn >= 5 or any(
+                    item.kind is ObservationKind.COMINGOUT
+                    and item.claimed_role is Role.SEER
+                    and item.actor != observation.actor for item in history
+                )
+                if late:
+                    likelihood *= (parameters.late_co_if_seer if actor_role is Role.SEER
+                                   else parameters.late_co_if_other)
                 return self._evidence(
                     likelihood,
-                    "SEER_COMINGOUT_BY_ROLE",
-                    "占い師COの起こりやすさは、真占い師・狂人・人狼・村人で異なる。",
+                    "LATE_SEER_COMINGOUT" if late else "SEER_COMINGOUT_BY_ROLE",
+                    "占い師COの起こりやすさは役職で異なる。" + (
+                        "遅い時点または対抗CO後の宣言として、時点の尤度係数を適用する。"
+                        if late else "初期のCOとして比較する。"),
                 )
             likelihood = (
                 parameters.other_co_if_truthful
@@ -387,6 +411,14 @@ class TransparentLikelihoodModel:
                 )
                 rule_name = "ACTUAL_VOTE_BY_TEAM"
                 warrant = "実投票は、村側なら人狼へ、人狼陣営なら人間へ向きやすいという弱い証拠として扱う。"
+                declarations = [item for item in history
+                                if item.kind is ObservationKind.VOTE_DECLARATION
+                                and item.actor == observation.actor and item.day == observation.day]
+                if declarations and declarations[-1].target != observation.target:
+                    likelihood *= (parameters.changed_vote_if_village if village_side
+                                   else parameters.changed_vote_if_wolf_side)
+                    rule_name = "VOTE_CHANGED_FROM_DECLARATION"
+                    warrant += " 最後の投票宣言からの変更を、追加のソフト証拠として評価する。"
             else:
                 likelihood = (
                     parameters.declared_vote_village_to_wolf
@@ -414,19 +446,23 @@ class ExplainableRoleEstimator:
     def __init__(
         self,
         agents: Sequence[AgentId],
-        observer: AgentId,
-        observer_role: Role,
+        observer: AgentId | None,
+        observer_role: Role | None,
         *,
         role_counts: Mapping[Role, int] = FIVE_PLAYER_ROLE_COUNTS,
         likelihood_model: LikelihoodModel | None = None,
     ) -> None:
         if len(set(agents)) != len(agents):
             raise ValueError("agents must be unique")
-        if observer not in agents:
+        if observer is not None and observer not in agents:
             raise ValueError("observer must be one of agents")
+        if (observer is None) != (observer_role is None):
+            raise ValueError("public perspective requires both observer and role to be None")
+        if len(agents) != 5 or dict(role_counts) != dict(FIVE_PLAYER_ROLE_COUNTS):
+            raise ValueError("exact inference supports only the documented five-player composition")
         if sum(role_counts.values()) != len(agents):
             raise ValueError("role counts must equal number of agents")
-        if role_counts.get(observer_role, 0) < 1:
+        if observer_role is not None and role_counts.get(observer_role, 0) < 1:
             raise ValueError("observer role is absent from role counts")
 
         self.agents = tuple(agents)
@@ -446,7 +482,8 @@ class ExplainableRoleEstimator:
 
     def _generate_worlds(self) -> tuple[World, ...]:
         remaining_counts = dict(self.role_counts)
-        remaining_counts[self.observer_role] -= 1
+        if self.observer_role is not None:
+            remaining_counts[self.observer_role] -= 1
         remaining_roles: list[Role] = []
         for role, count in remaining_counts.items():
             remaining_roles.extend([role] * count)
@@ -459,7 +496,8 @@ class ExplainableRoleEstimator:
         worlds = []
         for assignment in unique_assignments:
             by_agent = dict(zip(others, assignment))
-            by_agent[self.observer] = self.observer_role
+            if self.observer is not None:
+                by_agent[self.observer] = self.observer_role
             worlds.append(World(tuple(by_agent[agent] for agent in self.agents)))
         if not worlds:
             raise ValueError("no valid role assignments")
@@ -489,7 +527,10 @@ class ExplainableRoleEstimator:
         """Apply one observation exactly once and retain its reasoning trace."""
 
         if observation.id in self._seen_observations:
-            return self._seen_observations[observation.id]
+            previous = self._seen_observations[observation.id]
+            if previous.observation != observation:
+                raise ValueError(f"conflicting content for observation id {observation.id!r}")
+            return previous
         if observation.actor not in self._agent_index:
             raise ValueError("observation actor is not in this game")
         if observation.target is not None and observation.target not in self._agent_index:
@@ -499,9 +540,11 @@ class ExplainableRoleEstimator:
             and observation.actor != self.observer
         ):
             raise ValueError("cannot import another player's private observation")
+        if (observation.kind is ObservationKind.PRIVATE_DIVINED
+                and self.observer_role is not Role.SEER):
+            raise ValueError("only a seer may receive private divination")
 
         before = self.all_marginals()
-        before_probabilities = self.probabilities()
         new_log_weights: list[float] = []
         evidence_by_world: list[LikelihoodEvidence] = []
         eliminated_worlds = 0
@@ -511,10 +554,15 @@ class ExplainableRoleEstimator:
             evidence = hard_evidence or self.likelihood_model.evaluate(
                 observation, world, self.agents, self.observations
             )
+            # Our own policy outputs are interventions, not independent evidence
+            # about hidden roles. A public observer can still interpret them.
+            if hard_evidence is None and observation.actor == self.observer:
+                evidence = LikelihoodEvidence(1.0, "SELF_ACTION_NOT_EVIDENCE",
+                    "自分の発言・投票から自分の信念を増幅しない。", "game-rules-v1")
             evidence_by_world.append(evidence)
-            if not hard_allowed or evidence.likelihood == 0:
+            if not hard_allowed:
                 new_log_weights.append(float("-inf"))
-                if before_probabilities[len(new_log_weights) - 1] > 0:
+                if isfinite(old_log_weight):
                     eliminated_worlds += 1
                 continue
             if not 0 < evidence.likelihood <= 1 or not isfinite(evidence.likelihood):
@@ -526,7 +574,7 @@ class ExplainableRoleEstimator:
         self._log_weights = self._normalize(new_log_weights, observation)
         after = self.all_marginals()
         reasons = self._make_reasons(observation, before, after, evidence_by_world)
-        update = BeliefUpdate(observation, eliminated_worlds, reasons)
+        update = BeliefUpdate(observation, eliminated_worlds, reasons, tuple(evidence_by_world))
         self.observations.append(observation)
         self.updates.append(update)
         self._seen_observations[observation.id] = update
@@ -743,6 +791,7 @@ class ExplainableRoleEstimator:
                 ],
                 audience=audience,
             ),
+            scores=tuple(scores.items()),
         )
 
     def explain_suspicion(
@@ -755,6 +804,11 @@ class ExplainableRoleEstimator:
     ) -> Argument:
         if target not in self._agent_index:
             raise ValueError("target is not in this game")
+        # Filtering private sentences is insufficient: probabilities, alternative
+        # ordering and public-event deltas can also reveal the private result.
+        if public_only and self.observer is not None:
+            return self.public_view().explain_suspicion(
+                target, candidates, audience=audience, public_only=True)
         candidate_list = [
             agent
             for agent in (candidates or self.agents)
@@ -764,6 +818,8 @@ class ExplainableRoleEstimator:
         target_reasons: list[Reason] = []
         for update_index, update in enumerate(self.updates):
             for reason in update.reasons:
+                if reason.hypothesis != f"{target}が{Role.WEREWOLF.value}である":
+                    continue
                 if public_only and reason.visibility is Visibility.PRIVATE:
                     continue
                 if reason.direction != "supports":
@@ -799,32 +855,69 @@ class ExplainableRoleEstimator:
             )
 
         ranked_alternatives = sorted(
-            candidate_list,
+            [agent for agent in candidate_list if self.marginal(agent, Role.WEREWOLF) > 0],
             key=lambda agent: (-self.marginal(agent, Role.WEREWOLF), self._agent_index[agent]),
         )
         alternatives: tuple[str, ...]
         if ranked_alternatives:
             alternative = ranked_alternatives[0]
             alternatives = (
-                f"{alternative}が人狼である世界も残っており、現時点では確定できない。",
+                f"{alternative}が人狼である世界も残る。" + (
+                    "この別仮説は現在の証拠モデルで対象仮説以上に支持され、公開根拠だけでは対象を優先できない。"
+                    if self.marginal(alternative, Role.WEREWOLF) >= self.marginal(target, Role.WEREWOLF)
+                    else "観測と各役職の行動尤度を統合すると対象仮説が優勢だが、別仮説を排除はできない。"),
             )
         else:
-            alternatives = ("比較可能な別候補はいない。",)
+            alternatives = ("指定候補の範囲では、正の重みを持つ別の人狼仮説はない。",)
 
+        opposing_reasons = [reason for reason in self.audit_reasons_for(target)
+                            if reason.direction == "weakens"
+                            and (not public_only or reason.visibility is Visibility.PUBLIC)]
         return Argument(
-            claim=f"現時点では{target}を優先して疑い、投票候補とする。",
+            claim=f"{target}を投票候補として検討する。公開根拠による支持と留保を示す。" if public_only
+                  else f"現時点では{target}を投票候補とする。",
             grounds=grounds,
             warrants=warrants,
             alternatives=alternatives,
             counterarguments=(
                 "発言は戦略、ブラフ、推理途中の誤りでも説明できるため、単独の発言だけでは役職を確定できない。",
-            ),
+            ) + tuple(reason.ground + " この観測の更新は対象の人狼仮説を弱めた。"
+                      for reason in opposing_reasons[-2:]),
             confidence_summary=(
                 f"統合後の{target}人狼確率は"
                 f"{self.marginal(target, Role.WEREWOLF):.1%}。これは根拠ではなく不確実性の要約である。"
             ),
             audience=audience,
+            evidence_ids=tuple(reason.observation_id for reason in selected),
         )
+
+    def public_view(self) -> ExplainableRoleEstimator:
+        """Recompute all 60 worlds without conditioning on any player's role."""
+        public = ExplainableRoleEstimator(self.agents, None, None,
+                                          likelihood_model=self.likelihood_model)
+        for observation in self.observations:
+            if observation.visibility is Visibility.PUBLIC:
+                public.observe(observation)
+        return public
+
+    def without_evidence(self, observation_id: str) -> ExplainableRoleEstimator:
+        """Leave-one-event-out replay, including changed downstream context.
+
+        This is sensitivity analysis, not a causal effect of actually changing
+        another player's behavior. The original estimator remains unchanged.
+        """
+        if observation_id not in self._seen_observations:
+            raise KeyError(observation_id)
+        replayed = ExplainableRoleEstimator(self.agents, self.observer, self.observer_role,
+                                            likelihood_model=self.likelihood_model)
+        for observation in self.observations:
+            if observation.id != observation_id:
+                replayed.observe(observation)
+        return replayed
+
+    def team_probabilities(self, agent: AgentId) -> dict[str, float]:
+        wolf_side = self.marginal(agent, Role.WEREWOLF) + self.marginal(agent, Role.POSSESSED)
+        return {"VILLAGE": 1.0 - wolf_side, "WOLF": wolf_side}
 
     def audit_reasons_for(self, target: AgentId) -> tuple[Reason, ...]:
         """Return public and private calculation traces for internal auditing."""
