@@ -54,7 +54,7 @@
     "vote_target": "Agent[02]",
     "vote_hits_wolf": false,
     "uniform_random_vote_hit_expectation": 0.25,
-    "update_ms_mean": 0.5274666667294999,
+    "update_ms_mean": 1.2407333318454523,
     "argument": {
       "claim": "Agent[02]を投票候補として検討する。公開根拠による支持と留保を示す。",
       "grounds": [
@@ -516,7 +516,7 @@
     "vote_target": "Agent[03]",
     "vote_hits_wolf": true,
     "uniform_random_vote_hit_expectation": 0.25,
-    "update_ms_mean": 0.3955333328728254,
+    "update_ms_mean": 0.8464999991701916,
     "argument": {
       "claim": "Agent[03]を投票候補として検討する。公開根拠による支持と留保を示す。",
       "grounds": [
