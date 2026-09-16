@@ -2,6 +2,7 @@ import unittest
 
 try:
     from aiwolf import Agent, GameInfo, GameSetting, Role, Topic
+    from seer import SampleSeer
     from villager import SampleVillager
 except ModuleNotFoundError:
     Agent = None
@@ -9,7 +10,10 @@ except ModuleNotFoundError:
     GameSetting = None
     Role = None
     Topic = None
+    SampleSeer = None
     SampleVillager = None
+
+from belief_model import Role as BeliefRole
 
 
 def game_setting():
@@ -43,7 +47,7 @@ def game_setting():
     )
 
 
-def game_info(talks=None):
+def game_info(talks=None, *, role="VILLAGER", divine_result=None):
     return GameInfo(
         {
             "agent": 1,
@@ -51,7 +55,7 @@ def game_info(talks=None):
             "attackedAgent": -1,
             "cursedFox": -1,
             "day": 1,
-            "divineResult": None,
+            "divineResult": divine_result,
             "executedAgent": -1,
             "existingRoleList": ["VILLAGER", "SEER", "POSSESSED", "WEREWOLF"],
             "guardedAgent": -1,
@@ -62,7 +66,7 @@ def game_info(talks=None):
             "mediumResult": None,
             "remainTalkMap": {str(i): 10 for i in range(1, 6)},
             "remainWhisperMap": {str(i): 0 for i in range(1, 6)},
-            "roleMap": {"1": "VILLAGER"},
+            "roleMap": {"1": role},
             "statusMap": {str(i): "ALIVE" for i in range(1, 6)},
             "talkList": talks or [],
             "voteList": [],
@@ -121,6 +125,38 @@ class SampleVillagerBeliefIntegrationTests(unittest.TestCase):
 
         self.assertEqual(Topic.VOTE, first.topic)
         self.assertEqual(Topic.Skip, second.topic)
+
+
+@unittest.skipIf(Agent is None, "aiwolf package is not installed")
+class SampleSeerBeliefIntegrationTests(unittest.TestCase):
+    def test_private_result_drives_vote_without_leaking_into_public_reason(self) -> None:
+        player = SampleSeer()
+        info = game_info(
+            role="SEER",
+            divine_result={
+                "agent": 1,
+                "day": 1,
+                "target": 4,
+                "result": "WEREWOLF",
+            },
+        )
+        player.initialize(info, game_setting())
+
+        player.day_start()
+        comingout = player.talk()
+        report = player.talk()
+        vote = player.talk()
+
+        self.assertEqual(Topic.COMINGOUT, comingout.topic)
+        self.assertEqual(Topic.DIVINED, report.topic)
+        self.assertEqual(Topic.VOTE, vote.topic)
+        self.assertEqual(Agent(4), player.vote())
+        self.assertAlmostEqual(
+            1.0,
+            player.belief_estimator.marginal(Agent(4), BeliefRole.WEREWOLF),
+        )
+        self.assertNotIn("自分だけが得た", player.last_vote_explanation)
+        self.assertIn("公開済みの観測だけでは", player.last_vote_explanation)
 
 
 if __name__ == "__main__":

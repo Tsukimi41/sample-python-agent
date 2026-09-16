@@ -104,6 +104,47 @@ class LikelihoodEvidence:
     likelihood: float
     rule_name: str
     warrant: str
+    model_version: str
+
+
+@dataclass(frozen=True)
+class LikelihoodParameters:
+    """Auditable baseline parameters; each value is an explicit hypothesis."""
+
+    version: str = "transparent-v1"
+    seer_co_if_seer: float = 0.82
+    seer_co_if_possessed: float = 0.65
+    seer_co_if_werewolf: float = 0.30
+    seer_co_if_villager: float = 0.05
+    other_co_if_truthful: float = 0.75
+    other_co_if_deceptive: float = 0.12
+    divined_match_if_seer: float = 0.95
+    divined_mismatch_if_seer: float = 0.05
+    divined_match_if_werewolf: float = 0.75
+    divined_mismatch_if_werewolf: float = 0.25
+    divined_if_possessed: float = 0.50
+    divined_if_villager: float = 0.15
+    contradiction_if_seer: float = 0.03
+    contradiction_if_villager: float = 0.08
+    contradiction_if_possessed: float = 0.20
+    contradiction_if_werewolf: float = 0.20
+    actual_vote_village_to_wolf: float = 0.55
+    actual_vote_village_to_other: float = 0.15
+    actual_vote_wolf_side_to_wolf: float = 0.10
+    actual_vote_wolf_side_to_other: float = 0.30
+    declared_vote_village_to_wolf: float = 0.40
+    declared_vote_village_to_other: float = 0.20
+    declared_vote_wolf_side_to_wolf: float = 0.15
+    declared_vote_wolf_side_to_other: float = 0.28
+
+    def __post_init__(self) -> None:
+        if not self.version:
+            raise ValueError("likelihood parameter version must not be empty")
+        for name, value in self.__dict__.items():
+            if name == "version":
+                continue
+            if not 0 < value <= 1:
+                raise ValueError(f"{name} must be in the interval (0, 1]")
 
 
 class LikelihoodModel(Protocol):
@@ -127,6 +168,7 @@ class Reason:
     visibility: Visibility
     probability_change: float
     rule_name: str
+    model_version: str
 
 
 @dataclass(frozen=True)
@@ -166,6 +208,53 @@ class VoteDecision:
     argument: Argument
 
 
+@dataclass(frozen=True)
+class WorldSummary:
+    assignments: tuple[tuple[AgentId, Role], ...]
+    probability: float
+
+
+@dataclass(frozen=True)
+class BeliefSnapshot:
+    """Immutable, inspectable belief state after a particular event."""
+
+    step: int
+    observation_id: str | None
+    marginals: tuple[tuple[AgentId, tuple[tuple[Role, float], ...]], ...]
+    top_worlds: tuple[WorldSummary, ...]
+
+    def probability(self, agent: AgentId, role: Role) -> float:
+        for snapshot_agent, role_probabilities in self.marginals:
+            if snapshot_agent == agent:
+                return dict(role_probabilities)[role]
+        raise KeyError(agent)
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a JSON-compatible view for evaluation and presentations."""
+
+        return {
+            "step": self.step,
+            "observation_id": self.observation_id,
+            "marginals": {
+                str(agent): {
+                    role.value: probability
+                    for role, probability in role_probabilities
+                }
+                for agent, role_probabilities in self.marginals
+            },
+            "top_worlds": [
+                {
+                    "assignments": {
+                        str(agent): role.value
+                        for agent, role in world.assignments
+                    },
+                    "probability": world.probability,
+                }
+                for world in self.top_worlds
+            ],
+        }
+
+
 class InconsistentEvidenceError(RuntimeError):
     """Raised instead of silently resetting when no possible world remains."""
 
@@ -178,12 +267,18 @@ class TransparentLikelihoodModel:
     the same interface.
     """
 
-    _seer_co = {
-        Role.SEER: 0.82,
-        Role.POSSESSED: 0.65,
-        Role.WEREWOLF: 0.30,
-        Role.VILLAGER: 0.05,
-    }
+    def __init__(self, parameters: LikelihoodParameters | None = None) -> None:
+        self.parameters = parameters or LikelihoodParameters()
+
+    def _evidence(
+        self, likelihood: float, rule_name: str, warrant: str
+    ) -> LikelihoodEvidence:
+        return LikelihoodEvidence(
+            likelihood,
+            rule_name,
+            warrant,
+            self.parameters.version,
+        )
 
     def evaluate(
         self,
@@ -194,17 +289,27 @@ class TransparentLikelihoodModel:
     ) -> LikelihoodEvidence:
         role_by_agent = dict(zip(agents, world.roles))
         actor_role = role_by_agent[observation.actor]
+        parameters = self.parameters
 
         if observation.kind is ObservationKind.COMINGOUT:
             if observation.claimed_role is Role.SEER:
-                likelihood = self._seer_co[actor_role]
-                return LikelihoodEvidence(
+                likelihood = {
+                    Role.SEER: parameters.seer_co_if_seer,
+                    Role.POSSESSED: parameters.seer_co_if_possessed,
+                    Role.WEREWOLF: parameters.seer_co_if_werewolf,
+                    Role.VILLAGER: parameters.seer_co_if_villager,
+                }[actor_role]
+                return self._evidence(
                     likelihood,
                     "SEER_COMINGOUT_BY_ROLE",
                     "占い師COの起こりやすさは、真占い師・狂人・人狼・村人で異なる。",
                 )
-            likelihood = 0.75 if actor_role is observation.claimed_role else 0.12
-            return LikelihoodEvidence(
+            likelihood = (
+                parameters.other_co_if_truthful
+                if actor_role is observation.claimed_role
+                else parameters.other_co_if_deceptive
+            )
+            return self._evidence(
                 likelihood,
                 "ROLE_COMINGOUT_BY_ROLE",
                 "自分の役職をCOする場合と、別の役職を騙る場合を同一視しない。",
@@ -218,13 +323,21 @@ class TransparentLikelihoodModel:
             report_matches_world = target_is_wolf == report_is_wolf
 
             if actor_role is Role.SEER:
-                likelihood = 0.95 if report_matches_world else 0.05
+                likelihood = (
+                    parameters.divined_match_if_seer
+                    if report_matches_world
+                    else parameters.divined_mismatch_if_seer
+                )
             elif actor_role is Role.WEREWOLF:
-                likelihood = 0.75 if report_matches_world else 0.25
+                likelihood = (
+                    parameters.divined_match_if_werewolf
+                    if report_matches_world
+                    else parameters.divined_mismatch_if_werewolf
+                )
             elif actor_role is Role.POSSESSED:
-                likelihood = 0.50
+                likelihood = parameters.divined_if_possessed
             else:
-                likelihood = 0.15
+                likelihood = parameters.divined_if_villager
 
             warrant = (
                 "占い報告と役職世界の整合性を比較する。真占い師は一致しやすく、"
@@ -241,15 +354,15 @@ class TransparentLikelihoodModel:
             ]
             if contradictions:
                 contradiction_factor = {
-                    Role.SEER: 0.03,
-                    Role.VILLAGER: 0.08,
-                    Role.POSSESSED: 0.20,
-                    Role.WEREWOLF: 0.20,
+                    Role.SEER: parameters.contradiction_if_seer,
+                    Role.VILLAGER: parameters.contradiction_if_villager,
+                    Role.POSSESSED: parameters.contradiction_if_possessed,
+                    Role.WEREWOLF: parameters.contradiction_if_werewolf,
                 }[actor_role]
                 likelihood *= contradiction_factor
                 warrant += " 同じ対象への矛盾報告は、特に真占い師仮説を弱める。"
 
-            return LikelihoodEvidence(
+            return self._evidence(
                 likelihood,
                 "DIVINATION_REPORT_COMPATIBILITY",
                 warrant,
@@ -264,25 +377,31 @@ class TransparentLikelihoodModel:
             village_side = actor_role in {Role.VILLAGER, Role.SEER}
             if observation.kind is ObservationKind.VOTE:
                 likelihood = (
-                    0.55 if village_side and target_is_wolf
-                    else 0.15 if village_side
-                    else 0.10 if target_is_wolf
-                    else 0.30
+                    parameters.actual_vote_village_to_wolf
+                    if village_side and target_is_wolf
+                    else parameters.actual_vote_village_to_other
+                    if village_side
+                    else parameters.actual_vote_wolf_side_to_wolf
+                    if target_is_wolf
+                    else parameters.actual_vote_wolf_side_to_other
                 )
                 rule_name = "ACTUAL_VOTE_BY_TEAM"
                 warrant = "実投票は、村側なら人狼へ、人狼陣営なら人間へ向きやすいという弱い証拠として扱う。"
             else:
                 likelihood = (
-                    0.40 if village_side and target_is_wolf
-                    else 0.20 if village_side
-                    else 0.15 if target_is_wolf
-                    else 0.28
+                    parameters.declared_vote_village_to_wolf
+                    if village_side and target_is_wolf
+                    else parameters.declared_vote_village_to_other
+                    if village_side
+                    else parameters.declared_vote_wolf_side_to_wolf
+                    if target_is_wolf
+                    else parameters.declared_vote_wolf_side_to_other
                 )
                 rule_name = "DECLARED_VOTE_BY_TEAM"
                 warrant = "投票宣言は戦略的に偽れるため、実投票より弱い証拠として扱う。"
-            return LikelihoodEvidence(likelihood, rule_name, warrant)
+            return self._evidence(likelihood, rule_name, warrant)
 
-        return LikelihoodEvidence(
+        return self._evidence(
             1.0,
             "NEUTRAL_PUBLIC_EVENT",
             "この公開イベントは、現在の基準モデルでは役職の相対重みを変えない。",
@@ -323,6 +442,7 @@ class ExplainableRoleEstimator:
         self.updates: list[BeliefUpdate] = []
         self._seen_observations: dict[str, BeliefUpdate] = {}
         self._marginal_snapshots = [self.all_marginals()]
+        self._log_weight_snapshots = [tuple(self._log_weights)]
 
     def _generate_worlds(self) -> tuple[World, ...]:
         remaining_counts = dict(self.role_counts)
@@ -411,7 +531,82 @@ class ExplainableRoleEstimator:
         self.updates.append(update)
         self._seen_observations[observation.id] = update
         self._marginal_snapshots.append(after)
+        self._log_weight_snapshots.append(tuple(self._log_weights))
         return update
+
+    def snapshot(self, step: int | None = None, *, top_k: int = 5) -> BeliefSnapshot:
+        """Return the initial or post-observation state without mutating it.
+
+        Step 0 is the prior.  Step n is the state after observation n.  Keeping
+        this convention explicit prevents explanations from accidentally using
+        evidence that had not yet occurred at the requested point in time.
+        """
+
+        selected_step = len(self.observations) if step is None else step
+        if not 0 <= selected_step <= len(self.observations):
+            raise IndexError("snapshot step is outside the belief history")
+        if top_k < 0:
+            raise ValueError("top_k must be non-negative")
+
+        marginals = self._marginal_snapshots[selected_step]
+        frozen_marginals = tuple(
+            (
+                agent,
+                tuple((role, marginals[agent][role]) for role in self.role_counts),
+            )
+            for agent in self.agents
+        )
+        log_weights = self._log_weight_snapshots[selected_step]
+        ranked_worlds = sorted(
+            zip(self.worlds, log_weights),
+            key=lambda item: -item[1],
+        )[:top_k]
+        top_worlds = tuple(
+            WorldSummary(
+                assignments=tuple(zip(self.agents, world.roles)),
+                probability=exp(log_weight),
+            )
+            for world, log_weight in ranked_worlds
+            if isfinite(log_weight)
+        )
+        observation_id = (
+            None if selected_step == 0 else self.observations[selected_step - 1].id
+        )
+        return BeliefSnapshot(
+            step=selected_step,
+            observation_id=observation_id,
+            marginals=frozen_marginals,
+            top_worlds=top_worlds,
+        )
+
+    def timeline(
+        self, agent: AgentId, role: Role = Role.WEREWOLF
+    ) -> tuple[tuple[str | None, float], ...]:
+        """Return the belief trajectory for one explicit role hypothesis."""
+
+        if agent not in self._agent_index:
+            raise KeyError(agent)
+        return tuple(
+            (
+                None if step == 0 else self.observations[step - 1].id,
+                snapshot[agent][role],
+            )
+            for step, snapshot in enumerate(self._marginal_snapshots)
+        )
+
+    def replay(self) -> ExplainableRoleEstimator:
+        """Rebuild belief from the event log to verify deterministic replay."""
+
+        replayed = ExplainableRoleEstimator(
+            self.agents,
+            self.observer,
+            self.observer_role,
+            role_counts=self.role_counts,
+            likelihood_model=self.likelihood_model,
+        )
+        for observation in self.observations:
+            replayed.observe(observation)
+        return replayed
 
     def _hard_constraint(
         self, observation: Observation, world: World
@@ -426,6 +621,7 @@ class ExplainableRoleEstimator:
                 1.0 if allowed else 0.0,
                 "PRIVATE_DIVINATION_TRUTH",
                 "自分が得た占い結果は自己視点では確定情報であり、矛盾する役職世界を除外する。",
+                "game-rules-v1",
             )
         if observation.kind is ObservationKind.ATTACKED:
             assert observation.target is not None
@@ -434,6 +630,7 @@ class ExplainableRoleEstimator:
                 1.0 if allowed else 0.0,
                 "ATTACKED_PLAYER_IS_NOT_WEREWOLF",
                 "襲撃され死亡したプレイヤーは、人狼自身ではないというゲーム規則を適用する。",
+                "game-rules-v1",
             )
         return True, None
 
@@ -479,6 +676,7 @@ class ExplainableRoleEstimator:
                     visibility=observation.visibility,
                     probability_change=change,
                     rule_name=representative.rule_name,
+                    model_version=representative.model_version,
                 )
             )
         return tuple(reasons)
@@ -585,6 +783,7 @@ class ExplainableRoleEstimator:
                             reason.visibility,
                             change,
                             reason.rule_name,
+                            reason.model_version,
                         )
                     )
 
@@ -651,6 +850,7 @@ class ExplainableRoleEstimator:
                     visibility=update.observation.visibility,
                     probability_change=change,
                     rule_name=template.rule_name,
+                    model_version=template.model_version,
                 )
             )
         return tuple(reasons)

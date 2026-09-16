@@ -6,9 +6,7 @@ of server-only information and keeps the core independently testable.
 
 from __future__ import annotations
 
-from typing import Iterable
-
-from aiwolf import Content, GameInfo, GameSetting, Talk, Topic
+from aiwolf import Content, GameInfo, GameSetting, Judge, Talk, Topic
 
 from belief_model import (
     ExplainableRoleEstimator,
@@ -16,10 +14,12 @@ from belief_model import (
     ObservationKind,
     Role,
     Species,
+    Visibility,
 )
 
 
 SUPPORTED_ROLES = frozenset(role.value for role in Role)
+SUPPORTED_SPECIES = frozenset(species.value for species in Species)
 
 
 def create_five_player_estimator(
@@ -68,7 +68,7 @@ def talk_to_observation(talk: Talk) -> Observation | None:
             claimed_role=Role(content.role.value),
             **common,
         )
-    if content.topic is Topic.DIVINED and content.result.value in Species._value2member_map_:
+    if content.topic is Topic.DIVINED and content.result.value in SUPPORTED_SPECIES:
         return Observation(
             kind=ObservationKind.DIVINED,
             target=content.target,
@@ -82,6 +82,26 @@ def talk_to_observation(talk: Talk) -> Observation | None:
             **common,
         )
     return None
+
+
+def private_divination_to_observation(
+    judge: Judge, observer: object
+) -> Observation:
+    """Translate a seer's own result as private, certain evidence."""
+
+    if judge.agent != observer:
+        raise ValueError("private divination result does not belong to observer")
+    if judge.result.value not in SUPPORTED_SPECIES:
+        raise ValueError("unsupported divination species")
+    return Observation(
+        id=f"private-divined:{judge.day}:{judge.target}",
+        kind=ObservationKind.PRIVATE_DIVINED,
+        actor=observer,
+        target=judge.target,
+        species=Species(judge.result.value),
+        day=judge.day,
+        visibility=Visibility.PRIVATE,
+    )
 
 
 def observe_new_game_info(
@@ -129,10 +149,3 @@ def observe_new_game_info(
                 day=game_info.day,
             )
         )
-
-
-def living_candidates(game_info: GameInfo, candidates: Iterable[object]) -> list[object]:
-    """Preserve game order while intersecting with currently living agents."""
-
-    candidate_set = set(candidates)
-    return [agent for agent in game_info.alive_agent_list if agent in candidate_set]

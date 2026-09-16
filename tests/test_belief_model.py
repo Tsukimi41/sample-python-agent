@@ -1,11 +1,14 @@
+import json
 import unittest
 
 from belief_model import (
     ExplainableRoleEstimator,
+    LikelihoodParameters,
     Observation,
     ObservationKind,
     Role,
     Species,
+    TransparentLikelihoodModel,
     Visibility,
 )
 
@@ -167,6 +170,141 @@ class ExplainableRoleEstimatorTests(unittest.TestCase):
         self.assertIs(first, second)
         self.assertEqual(probabilities, estimator.probabilities())
         self.assertEqual(1, len(estimator.observations))
+
+    def test_snapshots_preserve_the_belief_at_each_event_time(self) -> None:
+        estimator = self.make_estimator()
+        initial = estimator.snapshot(top_k=2)
+        estimator.observe(
+            Observation(
+                id="talk:1:0",
+                kind=ObservationKind.DIVINED,
+                actor=AGENTS[1],
+                target=AGENTS[2],
+                species=Species.WEREWOLF,
+                day=1,
+            )
+        )
+        updated = estimator.snapshot(top_k=2)
+
+        self.assertEqual(0, initial.step)
+        self.assertIsNone(initial.observation_id)
+        self.assertEqual("talk:1:0", updated.observation_id)
+        self.assertEqual(2, len(updated.top_worlds))
+        self.assertNotEqual(
+            initial.probability(AGENTS[2], Role.WEREWOLF),
+            updated.probability(AGENTS[2], Role.WEREWOLF),
+        )
+        self.assertEqual(
+            initial.probability(AGENTS[2], Role.WEREWOLF),
+            estimator.snapshot(0).probability(AGENTS[2], Role.WEREWOLF),
+        )
+
+    def test_timeline_names_the_event_that_changed_each_belief(self) -> None:
+        estimator = self.make_estimator()
+        estimator.observe(
+            Observation(
+                id="talk:1:0",
+                kind=ObservationKind.COMINGOUT,
+                actor=AGENTS[1],
+                claimed_role=Role.SEER,
+                day=1,
+            )
+        )
+
+        timeline = estimator.timeline(AGENTS[1], Role.SEER)
+
+        self.assertIsNone(timeline[0][0])
+        self.assertAlmostEqual(0.25, timeline[0][1])
+        self.assertEqual("talk:1:0", timeline[1][0])
+        self.assertGreater(timeline[1][1], timeline[0][1])
+
+    def test_event_log_replay_reconstructs_probabilities_and_arguments(self) -> None:
+        estimator = self.make_estimator()
+        estimator.observe(
+            Observation(
+                id="talk:1:0",
+                kind=ObservationKind.COMINGOUT,
+                actor=AGENTS[1],
+                claimed_role=Role.SEER,
+                day=1,
+            )
+        )
+        estimator.observe(
+            Observation(
+                id="talk:1:1",
+                kind=ObservationKind.DIVINED,
+                actor=AGENTS[1],
+                target=AGENTS[2],
+                species=Species.WEREWOLF,
+                day=1,
+                turn=1,
+            )
+        )
+
+        replayed = estimator.replay()
+
+        self.assertEqual(estimator.probabilities(), replayed.probabilities())
+        self.assertEqual(
+            estimator.choose_vote(AGENTS).argument,
+            replayed.choose_vote(AGENTS).argument,
+        )
+
+    def test_snapshot_export_is_json_serializable_and_human_readable(self) -> None:
+        estimator = self.make_estimator()
+        estimator.observe(
+            Observation(
+                id="talk:1:0",
+                kind=ObservationKind.COMINGOUT,
+                actor=AGENTS[1],
+                claimed_role=Role.SEER,
+                day=1,
+            )
+        )
+
+        exported = estimator.snapshot(top_k=3).to_dict()
+        encoded = json.dumps(exported, ensure_ascii=False)
+
+        self.assertEqual(1, exported["step"])
+        self.assertEqual("talk:1:0", exported["observation_id"])
+        self.assertIn("Agent[02]", exported["marginals"])
+        self.assertIn("SEER", exported["marginals"]["Agent[02]"])
+        self.assertIn("Agent[02]", encoded)
+        self.assertEqual(3, len(exported["top_worlds"]))
+
+    def test_likelihood_parameters_are_external_and_versioned(self) -> None:
+        parameters = LikelihoodParameters(
+            version="seer-heavy-test",
+            seer_co_if_seer=0.9,
+            seer_co_if_possessed=0.1,
+            seer_co_if_werewolf=0.1,
+            seer_co_if_villager=0.1,
+        )
+        estimator = ExplainableRoleEstimator(
+            AGENTS,
+            AGENTS[0],
+            Role.VILLAGER,
+            likelihood_model=TransparentLikelihoodModel(parameters),
+        )
+
+        update = estimator.observe(
+            Observation(
+                id="talk:1:0",
+                kind=ObservationKind.COMINGOUT,
+                actor=AGENTS[1],
+                claimed_role=Role.SEER,
+                day=1,
+            )
+        )
+
+        self.assertGreater(estimator.marginal(AGENTS[1], Role.SEER), 0.7)
+        self.assertTrue(update.reasons)
+        self.assertTrue(all(
+            reason.model_version == "seer-heavy-test" for reason in update.reasons
+        ))
+
+    def test_likelihood_parameters_reject_invalid_probabilities(self) -> None:
+        with self.assertRaises(ValueError):
+            LikelihoodParameters(seer_co_if_seer=1.1)
 
 
 if __name__ == "__main__":

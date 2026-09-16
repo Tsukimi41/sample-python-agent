@@ -1,14 +1,20 @@
 import unittest
 
 try:
-    from aiwolf import Agent, Talk
-    from aiwolf_belief_adapter import talk_to_observation
+    from aiwolf import Agent, Judge, Species as AIWolfSpecies, Talk
+    from aiwolf_belief_adapter import (
+        private_divination_to_observation,
+        talk_to_observation,
+    )
 except ModuleNotFoundError:  # Core tests remain runnable without the optional SDK.
     Agent = None
+    Judge = None
+    AIWolfSpecies = None
     Talk = None
+    private_divination_to_observation = None
     talk_to_observation = None
 
-from belief_model import ObservationKind, Role, Species
+from belief_model import ObservationKind, Role, Species, Visibility
 
 
 @unittest.skipIf(Agent is None, "aiwolf package is not installed")
@@ -37,6 +43,21 @@ class AIWolfBeliefAdapterTests(unittest.TestCase):
         talk = Talk(1, Agent(2), 5, "Skip", 1)
 
         self.assertIsNone(talk_to_observation(talk))
+
+    def test_marks_own_divination_as_private_certain_evidence(self) -> None:
+        judge = Judge(Agent(1), 1, Agent(4), AIWolfSpecies.WEREWOLF)
+
+        observation = private_divination_to_observation(judge, Agent(1))
+
+        self.assertEqual(ObservationKind.PRIVATE_DIVINED, observation.kind)
+        self.assertEqual(Visibility.PRIVATE, observation.visibility)
+        self.assertEqual(Species.WEREWOLF, observation.species)
+
+    def test_rejects_another_players_private_result(self) -> None:
+        judge = Judge(Agent(2), 1, Agent(4), AIWolfSpecies.WEREWOLF)
+
+        with self.assertRaises(ValueError):
+            private_divination_to_observation(judge, Agent(1))
 
 
 if __name__ == "__main__":

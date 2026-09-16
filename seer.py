@@ -24,6 +24,7 @@ from aiwolf import (Agent, ComingoutContentBuilder, Content,
 from aiwolf.constant import AGENT_NONE
 
 from const import CONTENT_SKIP
+from aiwolf_belief_adapter import private_divination_to_observation
 from villager import SampleVillager
 
 
@@ -58,6 +59,10 @@ class SampleSeer(SampleVillager):
         judge: Optional[Judge] = self.game_info.divine_result
         if judge is not None:
             self.my_judge_queue.append(judge)
+            if self.belief_estimator is not None:
+                self.belief_estimator.observe(
+                    private_divination_to_observation(judge, self.me)
+                )
             if judge.target in self.not_divined_agents:
                 self.not_divined_agents.remove(judge.target)
             if judge.result == Species.WEREWOLF:
@@ -81,6 +86,16 @@ class SampleSeer(SampleVillager):
         # Vote for one of the alive agents if there are no candidates.
         if not candidates:
             candidates = self.get_alive_others(self.game_info.agent_list)
+        if self.belief_estimator is not None and candidates:
+            decision = self.belief_estimator.choose_vote(
+                self.game_info.alive_agent_list,
+                eligible_candidates=candidates,
+            )
+            self.last_vote_explanation = decision.argument.render()
+            if self.vote_candidate != decision.target:
+                self.vote_candidate = decision.target
+                return Content(VoteContentBuilder(self.vote_candidate))
+            return CONTENT_SKIP
         # Declare which to vote for if not declare yet or the candidate is changed.
         if self.vote_candidate == AGENT_NONE or self.vote_candidate not in candidates:
             self.vote_candidate = self.random_select(candidates)
